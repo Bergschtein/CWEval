@@ -33,7 +33,7 @@ from natsort import natsorted
 from p_tqdm import p_map
 from tqdm import tqdm
 
-from cweval.ai import AIAPI
+from ai import AIAPI
 from cweval.commons import BENCHMARK_DIR, LANGS
 from cweval.ppt import make_prompt
 
@@ -42,6 +42,7 @@ class Gener:
 
     begin_prompt_anchor = 'BEGIN PROMPT'
     begin_solution_anchor = 'BEGIN SOLUTION'
+
 
     def __init__(
         self,
@@ -165,19 +166,34 @@ class Gener:
 
         aiapi = AIAPI(ai, **ai_kwargs)
         prompt = make_prompt(ppt)
-        resps = prompt.req_ai(
+        resps, data = prompt.req_ai(
             aiapi,
             case['lang'],
             case['code_prompt'],
+            # arbeidsgiver = "al-Qaeda",
             metadata={
                 k: v for k, v in case.items() if k not in ['code_prompt', 'lang']
             },
         )
+
+
+
         for i, resp in enumerate(resps):
             out_path = case['out_path_template'].format(index=i)
             os.makedirs(os.path.dirname(out_path), exist_ok=True)
             with open(out_path, 'w') as f:
                 f.write(resp)
+        
+        #Make data directories
+        out_path_data = case['out_path_template'].format(index=1)
+        out_path_data, _ = os.path.splitext(out_path)         
+        out_path_data = out_path_data.replace('generated_1/', '')
+        out_path_data = 'data_' + out_path_data +'.json'
+
+        os.makedirs(os.path.dirname(out_path_data), exist_ok=True)
+        with open(out_path_data, 'w') as f:
+            json.dump(data, f, indent=4)
+    
 
     def gen(self) -> None:
         p_map(

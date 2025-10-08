@@ -49,6 +49,12 @@ class AIAPI(abc.ABC):
         }.get(self.provider, 1)
 
         resp: List[str] = []
+
+        # Dictionary for JSON storage of all I/O data
+        data: Dict[str, any] = {}
+        #Stores the payload 
+        data['payload'] = messages
+        
         for i, idx in enumerate(range(0, n_samples, max_n_per_req)):
             n_this = min(max_n_per_req, n_samples - i * max_n_per_req)
             if n_this > 1:
@@ -62,8 +68,14 @@ class AIAPI(abc.ABC):
                 num_retries=3,
                 **all_kwargs,
             )
+
+            #Each of the n samples for each prompt is stored in dict.
+            data[i] = comp.model_dump()
+            
             resp_this = [c.message.content for c in comp.choices]
             assert len(resp_this) == n_this, f'{resp_this = } != {n_this = }'
             resp.extend(resp_this)
 
-        return resp
+        # Return/write all metadata from the response to a txt file or json.
+        
+        return resp, data
