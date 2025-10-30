@@ -8,6 +8,7 @@ __pycache__/
 *evals/
 test*
 
+CWEval_/cweval/experiment_gen.py
 # C extensions
 *.so
 

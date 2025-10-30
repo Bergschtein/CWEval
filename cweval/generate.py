@@ -20,6 +20,19 @@ evals
 │   │   └── lang
 │   └── generated_1
 └── pytest.ini
+
+
+JSON OF FULL MODEL RESPONSE
+
+data_evals
+├── eval_241110_014704
+│   ├── core
+│   │   ├── c
+│   │   │   ├── cwe_022_0_c_raw.json
+│   │   └── py
+│   │       ├── cwe_020_0_raw.json
+│   └── lang
+└── pytest.ini
 """
 
 import datetime
@@ -47,16 +60,17 @@ class Gener:
     def __init__(
         self,
         eval_path: str = '',
-        model: str = 'gpt-4o-mini-2024-07-18',
-        ppt: str = 'direct',
+        model: str = 'gpt-4.1-nano-2025-04-14',
+        ppt: str = 'system', #'direct',
         num_proc: int = 8,
-        langs: List[str] = LANGS,
+        langs: List[str] = ['py'], #LANGS,
         exclude_path: List[str] = [],
         include_path: List[str] = [],
         # AI parameters
         n: int = 20,
         max_completion_tokens: int = 2048,
         temperature: float = 0.8,
+        system_prompt = None,
         **kwargs,
     ):
         self.model = model
@@ -65,6 +79,12 @@ class Gener:
         self.langs = langs
         self.exclude_path = exclude_path
         self.include_path = include_path
+
+        self.system_prompt = system_prompt
+        if ppt == 'direct' and system_prompt is not None:
+            print(f'Not direct and systemprompt. Exiting...')
+            exit(0)
+
         print(f'Using langs: {self.langs}')
         self.ai_kwargs = {
             'n': n,
@@ -152,6 +172,7 @@ class Gener:
         case: Dict[str, str],
         ai_kwargs: Dict[str, Any],
         rank: int,
+        system_prompt: str,
     ) -> None:
         num_samples = ai_kwargs.get('n', 1)
         for i in range(num_samples):
@@ -170,7 +191,7 @@ class Gener:
             aiapi,
             case['lang'],
             case['code_prompt'],
-            # arbeidsgiver = "al-Qaeda",
+            system_prompt= system_prompt if not None else None, # Test
             metadata={
                 k: v for k, v in case.items() if k not in ['code_prompt', 'lang']
             },
@@ -186,7 +207,7 @@ class Gener:
         
         #Make data directories
         out_path_data = case['out_path_template'].format(index=1)
-        out_path_data, _ = os.path.splitext(out_path)         
+        out_path_data, _ = os.path.splitext(out_path_data)         
         out_path_data = out_path_data.replace('generated_1/', '')
         out_path_data = 'data_' + out_path_data +'.json'
 
@@ -203,6 +224,7 @@ class Gener:
             self.cases.values(),
             [self.ai_kwargs] * len(self.cases),
             range(len(self.cases)),  # workaround: index as rank
+            [self.system_prompt] * len(self.cases), 
             num_cpus=self.num_proc,
         )
 

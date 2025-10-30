@@ -70,7 +70,7 @@ class AIAPI(abc.ABC):
             )
 
             #Each of the n samples for each prompt is stored in dict.
-            data[i] = comp.model_dump()
+            data['response'] = comp.model_dump()
             
             resp_this = [c.message.content for c in comp.choices]
             assert len(resp_this) == n_this, f'{resp_this = } != {n_this = }'
